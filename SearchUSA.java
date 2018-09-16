@@ -1,5 +1,11 @@
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.PriorityQueue;
 
 public class SearchUSA {
 
@@ -8,7 +14,168 @@ public class SearchUSA {
 		SearchUSA searchUSAObj = new SearchUSA();
 		HashMap<String, CityInformation> cityInformation = searchUSAObj.loadCityInformation();
 		HashMap<String, LinkedList<Node>> graphInformation = searchUSAObj.loadGraphInformation();
+		HashMap<String, Node> exploredHashMap = new HashMap<String, Node>();
+		List<String> exploredList = new ArrayList<String>();
+		List<String> pathList = new ArrayList<String>();
+		Comparator<Node> pathLengthComparator = null;
+		switch (args[0]) {
+		case "astar":
+			pathLengthComparator = new Comparator<Node>() {
+				@Override
+				public int compare(Node n1, Node n2) {
+					return (int) ((n1.getPathCost() + n1.getHeuristicCost())
+							- (n2.getPathCost() + n2.getHeuristicCost()));
+				}
+			};
+			break;
+		case "greedy":
+			pathLengthComparator = new Comparator<Node>() {
+				@Override
+				public int compare(Node n1, Node n2) {
+					return (int) ((n1.getHeuristicCost()) - (n2.getHeuristicCost()));
+				}
+			};
+			break;
+		case "dynamic":
+			pathLengthComparator = new Comparator<Node>() {
+				@Override
+				public int compare(Node n1, Node n2) {
+					return (int) ((n1.getPathCost()) - (n2.getPathCost()));
+				}
+			};
+			break;
+		default:
+			System.out.println("no match");
+		}
 
+		PriorityQueue<Node> frontierPriorityQueue = new PriorityQueue<Node>(pathLengthComparator);
+
+		searchUSAObj.findDistance(args[1], args[2], frontierPriorityQueue, exploredHashMap, cityInformation,
+				graphInformation, exploredList, pathList);
+
+		System.out.println("Explored List is: " + exploredList);
+		System.out.println("Number of elements in the explored list: " + exploredList.size());
+		System.out.println("Path traversed in " + args[0] + " is: " + pathList);
+		System.out.println("Number of elements in the solution path list: " + pathList.size());
+
+	}
+
+	protected void findDistance(String sourceCity, String destinationCity, PriorityQueue<Node> frontierPriorityQueue,
+			HashMap<String, Node> exploredHashMap, HashMap<String, CityInformation> cityInformation,
+			HashMap<String, LinkedList<Node>> graphInformation, List<String> exploredList, List<String> pathList) {
+		try {
+
+			double heuristicDistance = calculateHeuristicDistance(cityInformation.get(sourceCity),
+					cityInformation.get(destinationCity));
+			Node initialNode = null;
+
+			initialNode = new Node(null, sourceCity, 0, heuristicDistance);
+
+			frontierPriorityQueue.add(initialNode);
+
+			while ((frontierPriorityQueue != null) && !frontierPriorityQueue.isEmpty()) {
+				Node highestPriorityNode = frontierPriorityQueue.remove();
+				if (highestPriorityNode.getCurrenCity().equalsIgnoreCase(destinationCity)) {
+					// Recursion to get the path.
+					getPath(highestPriorityNode.getParentCity(), exploredHashMap, pathList);
+					Collections.reverse(pathList);
+					pathList.add(destinationCity);
+					System.out.println("The total distance from " + sourceCity + " to " + destinationCity
+							+ " in the solution path is = " + highestPriorityNode.getPathCost());
+					break;
+
+				} else {
+					// Adding node to the explored list
+					exploredHashMap.put(highestPriorityNode.getCurrenCity(), highestPriorityNode);
+					exploredList.add(highestPriorityNode.getCurrenCity());
+					getSuccessor(cityInformation, graphInformation, highestPriorityNode, destinationCity,
+							frontierPriorityQueue, exploredHashMap);
+
+				}
+			}
+
+		} catch (
+
+		Exception e) {
+			// Should be added in the log files
+			System.out.println("Error ocurred while searching using findDistance method");
+
+		}
+
+	}
+
+	protected void getSuccessor(HashMap<String, CityInformation> cityInformation,
+			HashMap<String, LinkedList<Node>> graphInformation, Node highestPriority, String destinationCity,
+			PriorityQueue<Node> frontierPriorityQueue, HashMap<String, Node> exploredHashMap) {
+		try {
+			// Get the linked list for the node city
+			if (graphInformation.get(highestPriority.getCurrenCity()) != null) {
+				LinkedList<Node> successorList = graphInformation.get(highestPriority.getCurrenCity());
+				Iterator<Node> successorListIterator = successorList.iterator();
+				// Iterating over each successor of highest priority node
+				while (successorListIterator.hasNext()) {
+					Node currentNode = successorListIterator.next();
+					double heuristicDistance = calculateHeuristicDistance(
+							cityInformation.get(currentNode.getCurrenCity()), cityInformation.get(destinationCity));
+
+					currentNode.setHeuristicCost(heuristicDistance);
+					currentNode.setPathCost(currentNode.getPathCost() + highestPriority.getPathCost());
+
+					currentNode.setParentCity(highestPriority.getCurrenCity());
+					boolean currentNodeInFrontier = false;
+					Node oldNode = null;
+					for (Node nodeElement : frontierPriorityQueue) {
+						if (nodeElement.getCurrenCity().equalsIgnoreCase(highestPriority.getCurrenCity())) {
+							currentNodeInFrontier = true;
+							oldNode = nodeElement;
+							break;
+						}
+					}
+					if (!currentNodeInFrontier && !(exploredHashMap.containsKey(currentNode.getCurrenCity()))) {
+						frontierPriorityQueue.add(currentNode);
+					} else if (currentNodeInFrontier) {
+
+						if ((oldNode.getHeuristicCost() + oldNode.getPathCost()) > (currentNode.getHeuristicCost()
+								+ currentNode.getPathCost())) {
+							frontierPriorityQueue.remove(oldNode);
+							frontierPriorityQueue.add(currentNode);
+						}
+
+					}
+
+				}
+
+			}
+		} catch (Exception e) {
+			// Should be added in the log files
+			System.out.println("Error ocurred inside getSuccessor method");
+		}
+	}
+
+	protected void getPath(String parentCity, HashMap<String, Node> exploredHashMap, List<String> path) {
+		try {
+			// Exit case
+			if (exploredHashMap.get(parentCity).getParentCity() == null) {
+				path.add(parentCity);
+				return;
+			} else {
+				path.add(parentCity);
+				getPath(exploredHashMap.get(parentCity).getParentCity(), exploredHashMap, path);
+
+			}
+		} catch (Exception e) {
+			// Should be added in the log files
+			System.out.println("Error ocurred inside getPath method");
+
+		}
+
+	}
+
+	protected double calculateHeuristicDistance(CityInformation sourceCity, CityInformation destinationCity) {
+		// Heuristic distance calculation
+		return Math.sqrt(Math.pow((69.5 * (sourceCity.getLatitude() - destinationCity.getLatitude())), 2)
+				+ Math.pow((69.5 * Math.cos((sourceCity.getLatitude() + destinationCity.getLatitude()) / 360 * Math.PI)
+						* (sourceCity.getLongitude() - destinationCity.getLongitude())), 2));
 	}
 
 	// Parse the information and storing in the Hashmap.
@@ -17,13 +184,23 @@ public class SearchUSA {
 		try {
 			// Check if the city is already added as a key in the Hashmap
 			if (graphInformation.containsKey(sourceCity)) {
-				graphInformation.get(sourceCity).add(new Node(sourceCity, destinationCity, pathCost));
+				graphInformation.get(sourceCity).add(new Node(sourceCity, destinationCity, pathCost, 0));
 			}
 			// New key in the hashmap
 			else {
 				LinkedList<Node> nodeLinkedList = new LinkedList<Node>();
-				nodeLinkedList.add(new Node(sourceCity, destinationCity, pathCost));
+				nodeLinkedList.add(new Node(sourceCity, destinationCity, pathCost, 0));
 				graphInformation.put(sourceCity, nodeLinkedList);
+			}
+			// For the opposite direction
+			if (graphInformation.containsKey(destinationCity)) {
+				graphInformation.get(destinationCity).add(new Node(destinationCity, sourceCity, pathCost, 0));
+			}
+			// New key in the hashmap
+			else {
+				LinkedList<Node> nodeLinkedList = new LinkedList<Node>();
+				nodeLinkedList.add(new Node(destinationCity, sourceCity, pathCost, 0));
+				graphInformation.put(destinationCity, nodeLinkedList);
 			}
 
 		} catch (Exception e) {
@@ -32,15 +209,30 @@ public class SearchUSA {
 		}
 	}
 
+	// POJO for graph Node
 	public class Node {
 		String parentCity;
 		String currenCity;
 		double pathCost;
+		double heuristicCost;
 
-		protected Node(String parentCity, String currenCity, double pathCost) {
+		protected Node() {
+
+		}
+
+		protected Node(String parentCity, String currenCity, double pathCost, double heuristicCost) {
 			this.parentCity = parentCity;
 			this.currenCity = currenCity;
 			this.pathCost = pathCost;
+			this.heuristicCost = heuristicCost;
+		}
+
+		public double getHeuristicCost() {
+			return heuristicCost;
+		}
+
+		public void setHeuristicCost(double heuristicCost) {
+			this.heuristicCost = heuristicCost;
 		}
 
 		public String getParentCity() {
