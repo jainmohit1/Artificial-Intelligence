@@ -52,7 +52,7 @@ public class SearchUSA {
 		PriorityQueue<Node> frontierPriorityQueue = new PriorityQueue<Node>(pathLengthComparator);
 
 		searchUSAObj.findDistance(args[1], args[2], frontierPriorityQueue, exploredHashMap, cityInformation,
-				graphInformation, exploredList, pathList);
+				graphInformation, exploredList, pathList, args[0]);
 
 		System.out.println("Explored List is: " + exploredList);
 		System.out.println("Number of elements in the explored list: " + exploredList.size());
@@ -63,7 +63,8 @@ public class SearchUSA {
 
 	protected void findDistance(String sourceCity, String destinationCity, PriorityQueue<Node> frontierPriorityQueue,
 			HashMap<String, Node> exploredHashMap, HashMap<String, CityInformation> cityInformation,
-			HashMap<String, LinkedList<Node>> graphInformation, List<String> exploredList, List<String> pathList) {
+			HashMap<String, LinkedList<Node>> graphInformation, List<String> exploredList, List<String> pathList,
+			String typeOfAlgorithm) {
 		try {
 
 			double heuristicDistance = calculateHeuristicDistance(cityInformation.get(sourceCity),
@@ -90,7 +91,7 @@ public class SearchUSA {
 					exploredHashMap.put(highestPriorityNode.getCurrenCity(), highestPriorityNode);
 					exploredList.add(highestPriorityNode.getCurrenCity());
 					getSuccessor(cityInformation, graphInformation, highestPriorityNode, destinationCity,
-							frontierPriorityQueue, exploredHashMap);
+							frontierPriorityQueue, exploredHashMap, typeOfAlgorithm);
 
 				}
 			}
@@ -107,7 +108,7 @@ public class SearchUSA {
 
 	protected void getSuccessor(HashMap<String, CityInformation> cityInformation,
 			HashMap<String, LinkedList<Node>> graphInformation, Node highestPriority, String destinationCity,
-			PriorityQueue<Node> frontierPriorityQueue, HashMap<String, Node> exploredHashMap) {
+			PriorityQueue<Node> frontierPriorityQueue, HashMap<String, Node> exploredHashMap, String typeOfAlgorithm) {
 		try {
 			// Get the linked list for the node city
 			if (graphInformation.get(highestPriority.getCurrenCity()) != null) {
@@ -135,11 +136,29 @@ public class SearchUSA {
 					if (!currentNodeInFrontier && !(exploredHashMap.containsKey(currentNode.getCurrenCity()))) {
 						frontierPriorityQueue.add(currentNode);
 					} else if (currentNodeInFrontier) {
-
-						if ((oldNode.getHeuristicCost() + oldNode.getPathCost()) > (currentNode.getHeuristicCost()
-								+ currentNode.getPathCost())) {
-							frontierPriorityQueue.remove(oldNode);
-							frontierPriorityQueue.add(currentNode);
+						switch (typeOfAlgorithm) {
+						case "astar":
+							if ((oldNode.getHeuristicCost() + oldNode.getPathCost()) > (currentNode.getHeuristicCost()
+									+ currentNode.getPathCost())) {
+								frontierPriorityQueue.remove(oldNode);
+								frontierPriorityQueue.add(currentNode);
+							}
+							break;
+						case "greedy":
+							if ((oldNode.getHeuristicCost()) > (currentNode.getHeuristicCost())) {
+								frontierPriorityQueue.remove(oldNode);
+								frontierPriorityQueue.add(currentNode);
+							}
+							break;
+						case "dynamic":
+							if ((oldNode.getHeuristicCost() + oldNode.getPathCost()) >= (currentNode.getHeuristicCost()
+									+ currentNode.getPathCost())) {
+								frontierPriorityQueue.remove(oldNode);
+								frontierPriorityQueue.add(currentNode);
+							}
+							break;
+						default:
+							System.out.println("no match");
 						}
 
 					}
