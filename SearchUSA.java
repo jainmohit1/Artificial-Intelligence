@@ -18,6 +18,7 @@ public class SearchUSA {
 		List<String> exploredList = new ArrayList<String>();
 		List<String> pathList = new ArrayList<String>();
 		Comparator<Node> pathLengthComparator = null;
+		// Comparators which differs based on input type algorithms
 		switch (args[0]) {
 		case "astar":
 			pathLengthComparator = new Comparator<Node>() {
@@ -160,6 +161,8 @@ public class SearchUSA {
 				return;
 			} else {
 				path.add(parentCity);
+				// recursively calling the method to trace back the node in the solution path
+				// using parent pointer
 				getPath(exploredHashMap.get(parentCity).getParentCity(), exploredHashMap, path);
 
 			}
@@ -206,95 +209,6 @@ public class SearchUSA {
 		} catch (Exception e) {
 			// Should be added in the log files
 			System.out.println("Error ocurred while parsing graph information");
-		}
-	}
-
-	// POJO for graph Node
-	public class Node {
-		String parentCity;
-		String currenCity;
-		double pathCost;
-		double heuristicCost;
-
-		protected Node() {
-
-		}
-
-		protected Node(String parentCity, String currenCity, double pathCost, double heuristicCost) {
-			this.parentCity = parentCity;
-			this.currenCity = currenCity;
-			this.pathCost = pathCost;
-			this.heuristicCost = heuristicCost;
-		}
-
-		public double getHeuristicCost() {
-			return heuristicCost;
-		}
-
-		public void setHeuristicCost(double heuristicCost) {
-			this.heuristicCost = heuristicCost;
-		}
-
-		public String getParentCity() {
-			return parentCity;
-		}
-
-		public void setParentCity(String parentCity) {
-			this.parentCity = parentCity;
-		}
-
-		public String getCurrenCity() {
-			return currenCity;
-		}
-
-		public void setCurrenCity(String currenCity) {
-			this.currenCity = currenCity;
-		}
-
-		public double getPathCost() {
-			return pathCost;
-		}
-
-		public void setPathCost(double pathCost) {
-			this.pathCost = pathCost;
-		}
-	}
-
-	// POJO of city information. Should be in a separate file and using import
-	// keyword, should be imported in this file
-	public class CityInformation {
-		String cityName;
-		double latitude;
-		double longitude;
-
-		protected CityInformation(String cityName, double latitude, double longitude) {
-			this.cityName = cityName;
-			this.latitude = latitude;
-			this.longitude = longitude;
-		}
-
-		public String getCityName() {
-			return cityName;
-		}
-
-		public void setCityName(String cityName) {
-			this.cityName = cityName;
-		}
-
-		public double getLatitude() {
-			return latitude;
-		}
-
-		public void setLatitude(double latitude) {
-			this.latitude = latitude;
-		}
-
-		public double getLongitude() {
-			return longitude;
-		}
-
-		public void setLongitude(double longitude) {
-			this.longitude = longitude;
 		}
 	}
 
