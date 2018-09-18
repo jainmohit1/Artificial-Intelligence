@@ -163,7 +163,7 @@ public class SearchUSA {
 							}
 							break;
 						case "dynamic":
-							if ((oldNode.getHeuristicCost() + oldNode.getPathCost()) >= (currentNode.getHeuristicCost()
+							if ((oldNode.getHeuristicCost() + oldNode.getPathCost()) > (currentNode.getHeuristicCost()
 									+ currentNode.getPathCost())) {
 								frontierPriorityQueue.remove(oldNode);
 								frontierPriorityQueue.add(currentNode);
