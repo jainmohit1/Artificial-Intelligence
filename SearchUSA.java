@@ -10,7 +10,7 @@ import java.util.PriorityQueue;
 public class SearchUSA {
 
 	public static void main(String[] args) {
-
+		// data structures to load data
 		SearchUSA searchUSAObj = new SearchUSA();
 		HashMap<String, CityInformation> cityInformation = searchUSAObj.loadCityInformation();
 		HashMap<String, LinkedList<Node>> graphInformation = searchUSAObj.loadGraphInformation();
@@ -18,7 +18,10 @@ public class SearchUSA {
 		List<String> exploredList = new ArrayList<String>();
 		List<String> pathList = new ArrayList<String>();
 		Comparator<Node> pathLengthComparator = null;
+		// Comparators which differs based on input type algorithms
 		switch (args[0]) {
+		// For astar comparison is done based on heuristic + distance from source to
+		// node only
 		case "astar":
 			pathLengthComparator = new Comparator<Node>() {
 				@Override
@@ -28,6 +31,7 @@ public class SearchUSA {
 				}
 			};
 			break;
+		// For greedy comparison is done based on heuristic only
 		case "greedy":
 			pathLengthComparator = new Comparator<Node>() {
 				@Override
@@ -36,6 +40,7 @@ public class SearchUSA {
 				}
 			};
 			break;
+		// For dynamic comparison is done based on distance from source to node only
 		case "dynamic":
 			pathLengthComparator = new Comparator<Node>() {
 				@Override
@@ -47,12 +52,12 @@ public class SearchUSA {
 		default:
 			System.out.println("no match");
 		}
-
+		// Priority queue is used for implementing frontier
 		PriorityQueue<Node> frontierPriorityQueue = new PriorityQueue<Node>(pathLengthComparator);
-
+		// Method which will find the solution path based on the algorithm type.
 		searchUSAObj.findDistance(args[1], args[2], frontierPriorityQueue, exploredHashMap, cityInformation,
-				graphInformation, exploredList, pathList);
-
+				graphInformation, exploredList, pathList, args[0]);
+		// Printing the results
 		System.out.println("Explored List is: " + exploredList);
 		System.out.println("Number of elements in the explored list: " + exploredList.size());
 		System.out.println("Path traversed in " + args[0] + " is: " + pathList);
@@ -62,15 +67,16 @@ public class SearchUSA {
 
 	protected void findDistance(String sourceCity, String destinationCity, PriorityQueue<Node> frontierPriorityQueue,
 			HashMap<String, Node> exploredHashMap, HashMap<String, CityInformation> cityInformation,
-			HashMap<String, LinkedList<Node>> graphInformation, List<String> exploredList, List<String> pathList) {
+			HashMap<String, LinkedList<Node>> graphInformation, List<String> exploredList, List<String> pathList,
+			String typeOfAlgorithm) {
 		try {
-
+			// Calculate heuristicDistance
 			double heuristicDistance = calculateHeuristicDistance(cityInformation.get(sourceCity),
 					cityInformation.get(destinationCity));
 			Node initialNode = null;
 
 			initialNode = new Node(null, sourceCity, 0, heuristicDistance);
-
+			// Adding initial code to the fromtier
 			frontierPriorityQueue.add(initialNode);
 
 			while ((frontierPriorityQueue != null) && !frontierPriorityQueue.isEmpty()) {
@@ -88,8 +94,9 @@ public class SearchUSA {
 					// Adding node to the explored list
 					exploredHashMap.put(highestPriorityNode.getCurrenCity(), highestPriorityNode);
 					exploredList.add(highestPriorityNode.getCurrenCity());
+					// Get the successor of highest prioity node to know where to go next
 					getSuccessor(cityInformation, graphInformation, highestPriorityNode, destinationCity,
-							frontierPriorityQueue, exploredHashMap);
+							frontierPriorityQueue, exploredHashMap, typeOfAlgorithm);
 
 				}
 			}
@@ -106,24 +113,27 @@ public class SearchUSA {
 
 	protected void getSuccessor(HashMap<String, CityInformation> cityInformation,
 			HashMap<String, LinkedList<Node>> graphInformation, Node highestPriority, String destinationCity,
-			PriorityQueue<Node> frontierPriorityQueue, HashMap<String, Node> exploredHashMap) {
+			PriorityQueue<Node> frontierPriorityQueue, HashMap<String, Node> exploredHashMap, String typeOfAlgorithm) {
 		try {
 			// Get the linked list for the node city
 			if (graphInformation.get(highestPriority.getCurrenCity()) != null) {
+				// from the map get the list of node connected to the highest priority node
 				LinkedList<Node> successorList = graphInformation.get(highestPriority.getCurrenCity());
+				// Iterator to traverse the LinkedList
 				Iterator<Node> successorListIterator = successorList.iterator();
 				// Iterating over each successor of highest priority node
 				while (successorListIterator.hasNext()) {
 					Node currentNode = successorListIterator.next();
 					double heuristicDistance = calculateHeuristicDistance(
 							cityInformation.get(currentNode.getCurrenCity()), cityInformation.get(destinationCity));
-
+					// Setting the values for the current node
 					currentNode.setHeuristicCost(heuristicDistance);
 					currentNode.setPathCost(currentNode.getPathCost() + highestPriority.getPathCost());
 
 					currentNode.setParentCity(highestPriority.getCurrenCity());
 					boolean currentNodeInFrontier = false;
 					Node oldNode = null;
+					// Check if we have the node for the current city already present in the queue
 					for (Node nodeElement : frontierPriorityQueue) {
 						if (nodeElement.getCurrenCity().equalsIgnoreCase(highestPriority.getCurrenCity())) {
 							currentNodeInFrontier = true;
@@ -131,14 +141,36 @@ public class SearchUSA {
 							break;
 						}
 					}
+					// If no node available for the current city in the queue and in the explored
+					// list, add it to the queue
 					if (!currentNodeInFrontier && !(exploredHashMap.containsKey(currentNode.getCurrenCity()))) {
 						frontierPriorityQueue.add(currentNode);
+						// if node present then compare the cost according to the algorithm and take
+						// action accordingly
 					} else if (currentNodeInFrontier) {
-
-						if ((oldNode.getHeuristicCost() + oldNode.getPathCost()) > (currentNode.getHeuristicCost()
-								+ currentNode.getPathCost())) {
-							frontierPriorityQueue.remove(oldNode);
-							frontierPriorityQueue.add(currentNode);
+						switch (typeOfAlgorithm) {
+						case "astar":
+							if ((oldNode.getHeuristicCost() + oldNode.getPathCost()) > (currentNode.getHeuristicCost()
+									+ currentNode.getPathCost())) {
+								frontierPriorityQueue.remove(oldNode);
+								frontierPriorityQueue.add(currentNode);
+							}
+							break;
+						case "greedy":
+							if ((oldNode.getHeuristicCost()) > (currentNode.getHeuristicCost())) {
+								frontierPriorityQueue.remove(oldNode);
+								frontierPriorityQueue.add(currentNode);
+							}
+							break;
+						case "dynamic":
+							if ((oldNode.getHeuristicCost() + oldNode.getPathCost()) >= (currentNode.getHeuristicCost()
+									+ currentNode.getPathCost())) {
+								frontierPriorityQueue.remove(oldNode);
+								frontierPriorityQueue.add(currentNode);
+							}
+							break;
+						default:
+							System.out.println("no match");
 						}
 
 					}
@@ -152,6 +184,7 @@ public class SearchUSA {
 		}
 	}
 
+// Method is used to get the traversed path
 	protected void getPath(String parentCity, HashMap<String, Node> exploredHashMap, List<String> path) {
 		try {
 			// Exit case
@@ -160,6 +193,8 @@ public class SearchUSA {
 				return;
 			} else {
 				path.add(parentCity);
+				// recursively calling the method to trace back the node in the solution path
+				// using parent pointer
 				getPath(exploredHashMap.get(parentCity).getParentCity(), exploredHashMap, path);
 
 			}
@@ -206,95 +241,6 @@ public class SearchUSA {
 		} catch (Exception e) {
 			// Should be added in the log files
 			System.out.println("Error ocurred while parsing graph information");
-		}
-	}
-
-	// POJO for graph Node
-	public class Node {
-		String parentCity;
-		String currenCity;
-		double pathCost;
-		double heuristicCost;
-
-		protected Node() {
-
-		}
-
-		protected Node(String parentCity, String currenCity, double pathCost, double heuristicCost) {
-			this.parentCity = parentCity;
-			this.currenCity = currenCity;
-			this.pathCost = pathCost;
-			this.heuristicCost = heuristicCost;
-		}
-
-		public double getHeuristicCost() {
-			return heuristicCost;
-		}
-
-		public void setHeuristicCost(double heuristicCost) {
-			this.heuristicCost = heuristicCost;
-		}
-
-		public String getParentCity() {
-			return parentCity;
-		}
-
-		public void setParentCity(String parentCity) {
-			this.parentCity = parentCity;
-		}
-
-		public String getCurrenCity() {
-			return currenCity;
-		}
-
-		public void setCurrenCity(String currenCity) {
-			this.currenCity = currenCity;
-		}
-
-		public double getPathCost() {
-			return pathCost;
-		}
-
-		public void setPathCost(double pathCost) {
-			this.pathCost = pathCost;
-		}
-	}
-
-	// POJO of city information. Should be in a separate file and using import
-	// keyword, should be imported in this file
-	public class CityInformation {
-		String cityName;
-		double latitude;
-		double longitude;
-
-		protected CityInformation(String cityName, double latitude, double longitude) {
-			this.cityName = cityName;
-			this.latitude = latitude;
-			this.longitude = longitude;
-		}
-
-		public String getCityName() {
-			return cityName;
-		}
-
-		public void setCityName(String cityName) {
-			this.cityName = cityName;
-		}
-
-		public double getLatitude() {
-			return latitude;
-		}
-
-		public void setLatitude(double latitude) {
-			this.latitude = latitude;
-		}
-
-		public double getLongitude() {
-			return longitude;
-		}
-
-		public void setLongitude(double longitude) {
-			this.longitude = longitude;
 		}
 	}
 
