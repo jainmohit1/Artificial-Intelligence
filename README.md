@@ -3,9 +3,9 @@ Contains programs written for Artificial Intelligence coursework
 
 ## Command to run the code from command line
 1. javac SearchUSA.java
- For Greedy
+###### For Greedy
 2. SearchUSA greedy sourcecity destinationcity
- For astar
+###### For astar
 3. SearchUSA astar sourcecity destinationcity
- For dynamic
+###### For dynamic
 4. SearchUSA dynamic sourcecity destinationcity
