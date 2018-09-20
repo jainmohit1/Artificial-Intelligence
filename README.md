@@ -10,6 +10,10 @@ Contains programs written for Artificial Intelligence coursework
 ###### For dynamic
 4. java SearchUSA dynamic sourcecity destinationcity
 
+###### Sample Input
+1. javac SearchUSA.java
+2. java SearchUSA dynamic greensboro raleigh
+
 ###### Sample Output
 
 The total distance from greensboro to raleigh in the solution path is = 74.0
